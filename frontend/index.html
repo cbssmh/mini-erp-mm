@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>Mini ERP (PR / PO / GR / Inventory)</title>
+    <link 
+        href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" 
+        rel="stylesheet"
+    >
+    <style>
+        body { padding: 30px; background: #f5f5f5; }
+        .card { margin-bottom: 20px; }
+    </style>
+</head>
+<body>
+
+    <h2 class="mb-4">Mini ERP 시스템 (SAP MM 기반)</h2>
+<!-- =============================
+     0. 회원가입(Register)
+============================== -->
+<div class="card">
+    <div class="card-header bg-dark text-white">회원가입(Register)</div>
+    <div class="card-body">
+        <input id="reg-username" class="form-control mb-2" placeholder="아이디">
+        <input id="reg-password" type="password" class="form-control mb-2" placeholder="비밀번호">
+        <button class="btn btn-dark" onclick="registerUser()">회원가입</button>
+        <p id="reg-result" class="mt-2"></p>
+    </div>
+</div>
+
+<script>
+    async function registerUser() {
+        const res = await fetch("/auth/register", {
+            method: "POST",
+            headers: {"Content-Type": "application/json"},
+            body: JSON.stringify({
+                username: document.getElementById("reg-username").value,
+                password: document.getElementById("reg-password").value
+            })
+        });
+
+        const data = await res.json();
+        document.getElementById("reg-result").innerText = 
+            data.message ? "회원가입 성공" : "회원가입 실패";
+    }
+</script>
+
+    <!-- =============================
+        1. 로그인
+    ============================== -->
+    <div class="card">
+        <div class="card-header bg-primary text-white">로그인</div>
+        <div class="card-body">
+            <input id="login-username" class="form-control mb-2" placeholder="아이디">
+            <input id="login-password" type="password" class="form-control mb-2" placeholder="비밀번호">
+            <button class="btn btn-primary" onclick="login()">로그인</button>
+            <p id="login-result" class="mt-2"></p>
+        </div>
+    </div>
+
+    <!-- =============================
+        2. 구매요청(PR) 생성
+    ============================== -->
+    <div class="card">
+        <div class="card-header bg-success text-white">구매요청(PR) 생성</div>
+        <div class="card-body">
+
+            <input id="pr-material" class="form-control mb-2" placeholder="material_id (예: 1)">
+            <input id="pr-qty" class="form-control mb-2" placeholder="quantity (예: 5)">
+            <input id="pr-price" class="form-control mb-2" placeholder="unit_price (예: 100)">
+            <input id="pr-dept" class="form-control mb-2" placeholder="department (예: IT)">
+
+            <button class="btn btn-success" onclick="createPR()">PR 생성</button>
+            <p id="pr-result" class="mt-2"></p>
+
+        </div>
+    </div>
+
+    <!-- =============================
+        3. PR 목록 조회
+    ============================== -->
+    <div class="card">
+        <div class="card-header bg-secondary text-white">PR 목록 조회</div>
+        <div class="card-body">
+            <button class="btn btn-secondary" onclick="getPR()">PR 목록 조회</button>
+            <pre id="pr-list" class="mt-3 bg-light p-3"></pre>
+        </div>
+    </div>
+
+    <!-- =============================
+        4. 구매오더(PO) 생성
+    ============================== -->
+    <div class="card">
+        <div class="card-header bg-warning text-white">구매오더(PO) 생성</div>
+        <div class="card-body">
+
+            <input id="po-pr-id" class="form-control mb-2" placeholder="pr_id">
+            <input id="po-vendor" class="form-control mb-2" placeholder="vendor_id">
+            <input id="po-date" type="date" class="form-control mb-2">
+
+            <button class="btn btn-warning" onclick="createPO()">PO 생성</button>
+            <p id="po-result" class="mt-2"></p>
+
+        </div>
+    </div>
+
+    <!-- =============================
+        5. 입고(GR) 처리
+    ============================== -->
+    <div class="card">
+        <div class="card-header bg-info text-white">입고(GR) 처리</div>
+        <div class="card-body">
+
+            <input id="gr-po-id" class="form-control mb-2" placeholder="po_id">
+            <input id="gr-qty" class="form-control mb-2" placeholder="received_quantity">
+
+            <button class="btn btn-info" onclick="receiveGoods()">입고 처리</button>
+            <p id="gr-result" class="mt-2"></p>
+
+        </div>
+    </div>
+
+    <!-- =============================
+        6. 재고 조회
+    ============================== -->
+    <div class="card">
+        <div class="card-header bg-dark text-white">재고 조회</div>
+        <div class="card-body">
+            <button class="btn btn-dark" onclick="getInventory()">재고 조회</button>
+            <pre id="inv-list" class="mt-3 bg-light p-3"></pre>
+        </div>
+    </div>
+
+<script>
+    let token = null;
+
+    async function login() {
+        const res = await fetch("/auth/login", {
+            method: "POST",
+            headers: {"Content-Type": "application/json"},
+            body: JSON.stringify({
+                username: document.getElementById("login-username").value,
+                password: document.getElementById("login-password").value
+            })
+        });
+
+        const data = await res.json();
+        if (data.token) {
+            token = data.token;
+            document.getElementById("login-result").innerText = "로그인 성공!";
+        } else {
+            document.getElementById("login-result").innerText = "로그인 실패!";
+        }
+    }
+
+    async function createPR() {
+        const res = await fetch("/inv/pr", {
+            method: "POST",
+            headers: {"Content-Type": "application/json"},
+            body: JSON.stringify({
+                material_id: parseInt(document.getElementById("pr-material").value),
+                quantity: parseInt(document.getElementById("pr-qty").value),
+                unit_price: parseFloat(document.getElementById("pr-price").value),
+                department: document.getElementById("pr-dept").value
+            })
+        });
+
+        document.getElementById("pr-result").innerText = "PR 생성 완료";
+    }
+
+    async function getPR() {
+        const res = await fetch("/inv/pr");
+        const data = await res.json();
+        document.getElementById("pr-list").innerText = JSON.stringify(data, null, 2);
+    }
+
+    async function createPO() {
+        const res = await fetch("/inv/po", {
+            method: "POST",
+            headers: {"Content-Type": "application/json"},
+            body: JSON.stringify({
+                pr_id: parseInt(document.getElementById("po-pr-id").value),
+                vendor_id: parseInt(document.getElementById("po-vendor").value),
+                expected_date: document.getElementById("po-date").value
+            })
+        });
+
+        document.getElementById("po-result").innerText = "PO 생성 완료";
+    }
+
+    async function receiveGoods() {
+        const res = await fetch("/inv/gr", {
+            method: "POST",
+            headers: {"Content-Type": "application/json"},
+            body: JSON.stringify({
+                po_id: parseInt(document.getElementById("gr-po-id").value),
+                received_quantity: parseInt(document.getElementById("gr-qty").value)
+            })
+        });
+
+        document.getElementById("gr-result").innerText = "입고 처리 완료";
+    }
+
+    async function getInventory() {
+        const res = await fetch("/inv/inventory");
+        const data = await res.json();
+        document.getElementById("inv-list").innerText = JSON.stringify(data, null, 2);
+    }
+</script>
+
+</body>
+</html>
