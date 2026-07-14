@@ -2,8 +2,8 @@ FROM node:18
 
 WORKDIR /app
 
-COPY package.json /app
-RUN npm install
+COPY package.json package-lock.json /app/
+RUN npm ci
 
 COPY . /app
 

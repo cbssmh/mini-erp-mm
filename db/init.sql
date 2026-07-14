@@ -5,7 +5,7 @@ CREATE TABLE IF NOT EXISTS material (
     material_id SERIAL PRIMARY KEY,
     material_name VARCHAR(100) NOT NULL,
     unit VARCHAR(20),
-    current_stock INTEGER DEFAULT 0,
+    current_stock INTEGER NOT NULL DEFAULT 0 CHECK (current_stock >= 0),
     avg_price NUMERIC(10,2) DEFAULT 0
 );
 
@@ -24,7 +24,7 @@ CREATE TABLE IF NOT EXISTS vendor (
 CREATE TABLE IF NOT EXISTS purchase_requisition (
     pr_id SERIAL PRIMARY KEY,
     material_id INTEGER REFERENCES material(material_id),
-    quantity INTEGER NOT NULL,
+    quantity INTEGER NOT NULL CHECK (quantity > 0),
     unit_price NUMERIC(10,2) NOT NULL,
     department VARCHAR(50),
     status VARCHAR(20) DEFAULT 'CREATED',
@@ -36,7 +36,7 @@ CREATE TABLE IF NOT EXISTS purchase_requisition (
 -- ===========================
 CREATE TABLE IF NOT EXISTS purchase_order (
     po_id SERIAL PRIMARY KEY,
-    pr_id INTEGER REFERENCES purchase_requisition(pr_id),
+    pr_id INTEGER UNIQUE REFERENCES purchase_requisition(pr_id),
     vendor_id INTEGER REFERENCES vendor(vendor_id),
     expected_date DATE,
     status VARCHAR(20) DEFAULT 'OPEN'
@@ -47,8 +47,8 @@ CREATE TABLE IF NOT EXISTS purchase_order (
 -- ===========================
 CREATE TABLE IF NOT EXISTS goods_receipt (
     gr_id SERIAL PRIMARY KEY,
-    po_id INTEGER REFERENCES purchase_order(po_id),
-    received_quantity INTEGER NOT NULL,
+    po_id INTEGER UNIQUE REFERENCES purchase_order(po_id),
+    received_quantity INTEGER NOT NULL CHECK (received_quantity > 0),
     received_at TIMESTAMP DEFAULT NOW()
 );
 
